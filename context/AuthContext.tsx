@@ -1,13 +1,13 @@
 
+'use client';
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { AuthUser, Driver } from '../types';
 import { MOCK_DRIVERS } from '../constants';
 
 const DRIVER_STORAGE_KEY = 'cna_drivers_data';
 const ADMIN_REGISTRY_KEY = 'cna_admin_registry';
-
-// Seed the initial admin list with some mock IDs for testing
-const INITIAL_ADMINS = ['1177810']; // Alex Simmons starts as admin
+const INITIAL_ADMINS = ['1177810'];
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -32,7 +32,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [allDrivers, setAllDrivers] = useState<Driver[]>(MOCK_DRIVERS);
   const [admins, setAdmins] = useState<string[]>(INITIAL_ADMINS);
 
-  // Load state from localStorage on init
   useEffect(() => {
     const savedDrivers = localStorage.getItem(DRIVER_STORAGE_KEY);
     if (savedDrivers) {
@@ -54,12 +53,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const removeAdmin = (id: string) => {
-    // Prevent removing the very last admin if needed, but for now just filter
     const updated = admins.filter(a => a !== id);
     setAdmins(updated);
     localStorage.setItem(ADMIN_REGISTRY_KEY, JSON.stringify(updated));
-    
-    // If the logged in user was removed, update their state
     if (user && user.id === id) {
       setUser({ ...user, isAdmin: false });
     }
@@ -69,7 +65,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const updated = allDrivers.map(d => d.id === id ? { ...d, ...updates } : d);
     setAllDrivers(updated);
     localStorage.setItem(DRIVER_STORAGE_KEY, JSON.stringify(updated));
-    
     if (user && user.id === id) {
       setUser({ ...user, ...updates });
     }
@@ -79,43 +74,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAuthenticating(true);
     setAuthStep(1);
     await new Promise(resolve => setTimeout(resolve, 800));
-    
     setAuthStep(2);
     await new Promise(resolve => setTimeout(resolve, 800));
-    
     setAuthStep(3);
     await new Promise(resolve => setTimeout(resolve, 1200));
-
     setAuthStep(4);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Find driver by ID or Email match
-    const foundDriver = allDrivers.find(d => 
-      emailOrId === d.id || 
-      emailOrId.toLowerCase().includes(d.name.toLowerCase().split(' ')[0].toLowerCase())
-    ) || allDrivers[0];
-    
-    // Key Security Logic: Check if ID is in the admin registry
+    const foundDriver = allDrivers.find(d => emailOrId === d.id || emailOrId.toLowerCase().includes(d.name.toLowerCase().split(' ')[0].toLowerCase())) || allDrivers[0];
     const isAdmin = admins.includes(foundDriver.id);
-    
-    setUser({
-      ...foundDriver,
-      email: emailOrId.includes('@') ? emailOrId : 'member@iracing.com',
-      isAdmin: isAdmin
-    });
+    setUser({ ...foundDriver, email: emailOrId.includes('@') ? emailOrId : 'member@iracing.com', isAdmin });
     setIsAuthenticating(false);
     setAuthStep(0);
   };
 
-  const logout = () => {
-    setUser(null);
-  };
+  const logout = () => setUser(null);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, login, logout, isAuthenticated: !!user, isAuthenticating, authStep, 
-      allDrivers, updateDriverInfo, admins, addAdmin, removeAdmin 
-    }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, isAuthenticating, authStep, allDrivers, updateDriverInfo, admins, addAdmin, removeAdmin }}>
       {children}
     </AuthContext.Provider>
   );
